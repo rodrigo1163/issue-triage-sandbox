@@ -1,3 +1,3 @@
-# `@turbo/eslint-config`
+# `@repo/eslint-config`
 
-Collection of internal eslint configurations.
+Configuração ESLint compartilhada para os pacotes do workspace.
