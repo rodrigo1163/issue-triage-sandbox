@@ -29,6 +29,7 @@ export class SqsConsumerService {
     }
 
     const event = this.parseMessage(message.Body);
+    console.log('[worker] Mensagem recebida do SQS:', event);
 
     await this.processIssueCreated(event);
 
@@ -60,7 +61,7 @@ export class SqsConsumerService {
     return issueCreatedMessageSchema.parse(payload);
   }
 
-  private async processIssueCreated(event: IssueCreatedMessage): Promise<void> {
+  private processIssueCreated(event: IssueCreatedMessage): void {
     this.logger.log(
       `Issue event received: ${event.data.repository}#${event.data.issueNumber}`,
     );
