@@ -1,16 +1,13 @@
-
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { EnvService } from '../../env/env.service.js';
 
 @Injectable()
 export class GithubWebhookSignatureService {
   private readonly secret: string;
 
-  constructor(configService: ConfigService) {
-    this.secret = configService.getOrThrow<string>(
-      'GITHUB_WEBHOOK_SECRET',
-    );
+  constructor(envService: EnvService) {
+    this.secret = envService.get('GITHUB_WEBHOOK_SECRET');
 
     if (!this.secret.trim()) {
       throw new Error('GitHub webhook secret must not be empty');

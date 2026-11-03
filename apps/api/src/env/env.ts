@@ -1,7 +1,10 @@
-import z from 'zod'
+import z from 'zod';
 
 export const envSchema = z.object({
-	GITHUB_WEBHOOK_SECRET: z.string().min(1),
-})
+  GITHUB_WEBHOOK_SECRET: z.string().min(1),
+  AWS_REGION: z.string().min(1),
+  SQS_QUEUE_URL: z.url(),
+  AWS_PROFILE: z.string().min(1),
+});
 
-export type Env = z.infer<typeof envSchema>
+export type Env = z.infer<typeof envSchema>;
