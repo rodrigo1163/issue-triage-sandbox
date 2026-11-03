@@ -1,10 +1,20 @@
 import { Module } from '@nestjs/common';
 import { HealthController } from './controllers/health.controller';
 import { WebhookGithubController } from './controllers/webhook-github.controller';
+import { GithubWebhookSignatureService } from './services/github-webhook-signature.service';
+import { EnvModule } from './env/env.module';
+import { ConfigModule } from '@nestjs/config';
+import { envSchema } from './env/env';
 
 @Module({
-  imports: [],
+  imports: [
+    ConfigModule.forRoot({
+      validate: (env) => envSchema.parse(env),
+      isGlobal: true,
+    }),
+    EnvModule
+  ],
   controllers: [HealthController, WebhookGithubController],
-  providers: [],
+  providers: [GithubWebhookSignatureService],
 })
 export class AppModule { }

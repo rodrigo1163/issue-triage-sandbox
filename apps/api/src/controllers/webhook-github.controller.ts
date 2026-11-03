@@ -1,7 +1,8 @@
-import { Body, Controller, Headers, Post, Req } from '@nestjs/common';
+import { Body, Controller, Headers, Post, Req, type RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
 import { ZodValidationPipe } from '../pipes/zod-validation-pipe';
 import z from 'zod';
+import { GithubWebhookSignatureService } from 'src/services/github-webhook-signature.service';
 
 export const githubIssueWebhookSchema = z.object({
   // GitHub sends different actions for the `issues` event, such as
@@ -38,13 +39,21 @@ const bodyValidationPipe = new ZodValidationPipe(githubIssueWebhookSchema)
 
 @Controller('webhooks/github')
 export class WebhookGithubController {
+  constructor(
+    private readonly signatureService: GithubWebhookSignatureService,
+  ) { }
+
+
   @Post()
   handle(
-    @Req() req: Request,
+    @Req() request: RawBodyRequest<Request>,
     @Body(bodyValidationPipe) body: GithubIssueWebhook,
+    @Headers('x-hub-signature-256') signature?: string,
     @Headers('x-github-event') githubEvent?: string,
     @Headers('x-github-delivery') githubDelivery?: string,
   ) {
+    this.signatureService.verify(request.rawBody, signature);
+
     const { action, issue, repository, sender } = body
 
     console.log({
