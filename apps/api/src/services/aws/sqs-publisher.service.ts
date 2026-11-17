@@ -10,7 +10,8 @@ export type IssueCreatedMessage = {
     repository: string;
     issueNumber: number;
     title: string;
-    description: string;
+    description: string | null;
+    missingInformation: Array<'description'>;
   };
 };
 
@@ -19,11 +20,10 @@ export class SqsPublisher implements OnModuleDestroy {
   private readonly client: SQSClient;
   private readonly queueUrl: string;
 
-
   constructor(private readonly env: EnvService) {
     this.client = new SQSClient({
       region: this.env.get('AWS_REGION'),
-      profile: this.env.get('AWS_PROFILE')
+      profile: this.env.get('AWS_PROFILE'),
     });
 
     this.queueUrl = this.env.get('SQS_QUEUE_URL');

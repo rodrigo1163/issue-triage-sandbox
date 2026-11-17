@@ -12,7 +12,8 @@ const issueCreatedMessageSchema = z.object({
     repository: z.string().min(1),
     issueNumber: z.number().int().positive(),
     title: z.string().min(1),
-    description: z.string(),
+    description: z.string().nullable(),
+    missingInformation: z.array(z.literal('description')),
   }),
 });
 
@@ -23,7 +24,7 @@ export class SqsConsumerService {
   private readonly logger = new Logger(SqsConsumerService.name);
 
   @SqsMessageHandler(ISSUE_TRIAGE_QUEUE_NAME, false)
-  async handleMessage(message: Message): Promise<Message> {
+  handleMessage(message: Message): Message {
     if (!message.Body) {
       throw new Error('SQS message body is empty');
     }
@@ -31,7 +32,7 @@ export class SqsConsumerService {
     const event = this.parseMessage(message.Body);
     console.log('[worker] Mensagem recebida do SQS:', event);
 
-    await this.processIssueCreated(event);
+    this.processIssueCreated(event);
 
     return message;
   }
