@@ -4,9 +4,9 @@ import { WebhookGithubController } from './controllers/webhook-github.controller
 import { EnvModule } from './env/env.module';
 import { ConfigModule } from '@nestjs/config';
 import { envSchema } from './env/env';
-import { GithubWebhookSignatureService } from './services/github/github-webhook-signature.service';
 import { AwsModule } from './services/aws/aws.module';
 import { GithubModule } from './services/github/github.module';
+import { PrismaModule } from './prisma/prisma.module.js';
 
 @Module({
   imports: [
@@ -16,9 +16,10 @@ import { GithubModule } from './services/github/github.module';
     }),
     EnvModule,
     AwsModule,
-    GithubModule
+    GithubModule,
+    PrismaModule,
   ],
   controllers: [HealthController, WebhookGithubController],
   providers: [],
 })
-export class AppModule { }
+export class AppModule {}
