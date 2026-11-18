@@ -31,3 +31,14 @@ model IssueTriage {
   @@unique([repository, issueNumber])
   @@index([status])
 }
+
+model ProjectCatalog {
+  id                 String   @id @default(cuid())
+  repository         String   @unique
+  responsibles       String[] @default([])
+  triageInstructions String[] @default([])
+  active             Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
