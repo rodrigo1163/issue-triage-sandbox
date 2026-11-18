@@ -5,6 +5,7 @@ import z from 'zod';
 import { ISSUE_TRIAGE_QUEUE_NAME } from './sqs-queue.constants';
 import { TriageStatus } from '@prisma/client';
 import { IssueTriageRepository } from '../triage/issue-triage.repository.js';
+import { ProjectCatalogService } from '../catalog/project-catalog.service.js';
 
 const issueCreatedMessageSchema = z.object({
   eventId: z.string().min(1),
@@ -25,7 +26,10 @@ type IssueCreatedMessage = z.infer<typeof issueCreatedMessageSchema>;
 export class SqsConsumerService {
   private readonly logger = new Logger(SqsConsumerService.name);
 
-  constructor(private readonly issueTriageRepository: IssueTriageRepository) {}
+  constructor(
+    private readonly issueTriageRepository: IssueTriageRepository,
+    private readonly projectCatalogService: ProjectCatalogService,
+  ) {}
 
   @SqsMessageHandler(ISSUE_TRIAGE_QUEUE_NAME, false)
   async handleMessage(message: Message): Promise<Message> {
@@ -81,8 +85,19 @@ export class SqsConsumerService {
       );
     }
 
+    const project = await this.projectCatalogService.findByRepository(
+      triage.repository,
+    );
+
+    if (!project) {
+      this.logger.warn(
+        `Project not found in catalog: ${triage.repository}; human review will be handled in a later step`,
+      );
+      return;
+    }
+
     this.logger.log(
-      `Persisted triage loaded: ${triage.repository}#${triage.issueNumber}`,
+      `Project context loaded for ${triage.repository}#${triage.issueNumber}: ${project.responsibles.join(', ')}`,
     );
   }
 }
