@@ -1,15 +1,17 @@
 import type { TriageLlmClient } from '../services/triage-llm-client.js';
-import { getSystemPrompt, getUserPromptTemplate } from '../prompts/v1/identifyIntent.js';
+import { IdentifyIntentPrompt } from '../prompts/v1/identifyIntent.js';
 import { IssueIntentSchema, type TriageGraphState } from '../types.js';
 
-export function createIdentifyIntentNode(llmClient: TriageLlmClient) {
-  return async (
-    state: TriageGraphState,
-  ): Promise<Partial<TriageGraphState>> => {
+export class IdentifyIntentNode {
+  private readonly prompt = new IdentifyIntentPrompt();
+
+  constructor(private readonly llmClient: TriageLlmClient) {}
+
+  async execute(state: TriageGraphState): Promise<Partial<TriageGraphState>> {
     try {
-      const result = await llmClient.generateStructured(
-        getSystemPrompt(),
-        getUserPromptTemplate(state),
+      const result = await this.llmClient.generateStructured(
+        this.prompt.getSystemPrompt(),
+        this.prompt.getUserPromptTemplate(state),
         IssueIntentSchema,
       );
 
@@ -23,5 +25,5 @@ export function createIdentifyIntentNode(llmClient: TriageLlmClient) {
         error: error instanceof Error ? error.message : String(error),
       };
     }
-  };
+  }
 }

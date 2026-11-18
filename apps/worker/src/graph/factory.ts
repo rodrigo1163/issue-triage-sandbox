@@ -1,6 +1,10 @@
-import { OpenRouterService } from '../services/ai/open-router.service.js';
-import { buildTriageGraph } from './graph.js';
+import type { TriageLlmClient } from './services/triage-llm-client.js';
+import { TriageGraph } from './graph.js';
 
-export function buildGraph(llmClient: OpenRouterService) {
-  return buildTriageGraph(llmClient);
+export class TriageGraphFactory {
+  constructor(private readonly llmClient: TriageLlmClient) {}
+
+  build() {
+    return new TriageGraph(this.llmClient).build();
+  }
 }

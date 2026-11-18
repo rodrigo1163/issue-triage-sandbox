@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { OpenRouterService } from '../services/ai/open-router.service.js';
-import { buildGraph } from './factory.js';
+import { TriageGraphFactory } from './factory.js';
 import type {
   TriageGraphInput,
   TriageGraphState,
@@ -11,7 +11,7 @@ export class TriageGraphService {
   private readonly graph;
 
   constructor(openRouterService: OpenRouterService) {
-    this.graph = buildGraph(openRouterService);
+    this.graph = new TriageGraphFactory(openRouterService).build();
   }
 
   async analyze(input: TriageGraphInput): Promise<TriageGraphState> {
