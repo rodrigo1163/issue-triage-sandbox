@@ -3,7 +3,7 @@ import type { Message } from '@aws-sdk/client-sqs';
 import { SqsConsumerEventHandler, SqsMessageHandler } from '@ssut/nestjs-sqs';
 import z from 'zod';
 import { ISSUE_TRIAGE_QUEUE_NAME } from './sqs-queue.constants';
-import { TriageStatus } from '@prisma/client';
+import { HumanReviewReason, TriageStatus } from '@prisma/client';
 import { IssueTriageRepository } from '../triage/issue-triage.repository.js';
 import { ProjectCatalogService } from '../catalog/project-catalog.service.js';
 
@@ -79,10 +79,28 @@ export class SqsConsumerService {
       throw new Error(`Triage not found for event ${event.eventId}`);
     }
 
+    if (triage.status === TriageStatus.HUMAN_REVIEW) {
+      this.logger.log(
+        `Human review already persisted for ${triage.repository}#${triage.issueNumber}: ${triage.humanReviewReason}`,
+      );
+      return;
+    }
+
     if (triage.status !== TriageStatus.QUEUED) {
       throw new Error(
         `Triage ${triage.id} is not ready for processing: ${triage.status}`,
       );
+    }
+
+    if (!triage.description?.trim()) {
+      await this.issueTriageRepository.markHumanReview(
+        triage.id,
+        HumanReviewReason.MISSING_DESCRIPTION,
+      );
+      this.logger.warn(
+        `Human review required for ${triage.repository}#${triage.issueNumber}: missing description`,
+      );
+      return;
     }
 
     const project = await this.projectCatalogService.findByRepository(
@@ -90,8 +108,12 @@ export class SqsConsumerService {
     );
 
     if (!project) {
+      await this.issueTriageRepository.markHumanReview(
+        triage.id,
+        HumanReviewReason.UNKNOWN_REPOSITORY,
+      );
       this.logger.warn(
-        `Project not found in catalog: ${triage.repository}; human review will be handled in a later step`,
+        `Human review required for ${triage.repository}#${triage.issueNumber}: repository not found in catalog`,
       );
       return;
     }

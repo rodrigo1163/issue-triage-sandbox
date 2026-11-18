@@ -32,10 +32,11 @@ Backend distribuído para receber issues do GitHub, organizar o processamento e 
 - [x] Tabela `ProjectCatalog` no PostgreSQL.
 - [x] Seed com o repositório de exemplo.
 - [x] Consulta do catálogo pelo Worker.
+- [x] Persistência do estado `HUMAN_REVIEW` e dos motivos `UNKNOWN_REPOSITORY` e `MISSING_DESCRIPTION`.
+- [x] Encaminhamento de repositórios desconhecidos e issues sem descrição para revisão humana.
 
 ## O que está parcialmente pronto
 
-- [ ] O Worker consulta o catálogo, mas ainda não grava o estado de revisão humana.
 - [ ] A deduplicação da entrada está pronta, mas a idempotência da publicação no GitHub ainda não foi implementada.
 - [ ] O Worker carrega a triagem, mas ainda não executa uma análise.
 
@@ -43,9 +44,9 @@ Backend distribuído para receber issues do GitHub, organizar o processamento e 
 
 ### Revisão humana
 
-- [ ] Adicionar o estado `HUMAN_REVIEW` e o motivo da revisão.
-- [ ] Encaminhar repositórios desconhecidos para revisão humana.
-- [ ] Encaminhar issues sem informações suficientes para revisão humana.
+- [x] Adicionar o estado `HUMAN_REVIEW` e o motivo da revisão.
+- [x] Encaminhar repositórios desconhecidos para revisão humana.
+- [x] Encaminhar issues sem informações suficientes para revisão humana.
 
 ### IA
 
@@ -93,7 +94,9 @@ SQS recebe o evento
       ↓
 Worker carrega a triagem
       ↓
-Worker consulta o catálogo
+Worker verifica descrição e catálogo
+      ├─ descrição ausente ou repositório desconhecido → HUMAN_REVIEW
+      └─ catálogo válido → contexto disponível para a próxima etapa
 ```
 
 ## Executar localmente
@@ -115,4 +118,4 @@ O `DATABASE_URL` deve apontar para o PostgreSQL local do Docker Compose.
 
 ## Próximo passo atual
 
-Persistir o estado `HUMAN_REVIEW` para repositórios desconhecidos e issues sem informações suficientes. Depois disso, implementar o harness e os especialistas de IA.
+Implementar o harness de IA e os especialistas para bugs e melhorias. A persistência e o roteamento do Worker foram validados manualmente contra o PostgreSQL local, sem adicionar testes automatizados. A validação end-to-end via SQS depende de uma `SQS_QUEUE_URL` válida.

@@ -10,6 +10,12 @@ datasource db {
 enum TriageStatus {
   RECEIVED
   QUEUED
+  HUMAN_REVIEW
+}
+
+enum HumanReviewReason {
+  UNKNOWN_REPOSITORY
+  MISSING_DESCRIPTION
 }
 
 model IssueTriage {
@@ -22,8 +28,9 @@ model IssueTriage {
   description String?
   occurredAt  DateTime
 
-  status       TriageStatus @default(RECEIVED)
-  sqsMessageId String?
+  status            TriageStatus      @default(RECEIVED)
+  humanReviewReason HumanReviewReason?
+  sqsMessageId      String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
