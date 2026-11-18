@@ -17,6 +17,7 @@ import {
   SqsPublisher,
   type IssueCreatedMessage,
 } from '../services/aws/sqs-publisher.service.js';
+import { IssueTriageRepository } from '../services/triage/issue-triage.repository.js';
 
 export const githubIssueWebhookSchema = z.object({
   // GitHub sends different actions for the `issues` event, such as
@@ -54,6 +55,7 @@ export class WebhookGithubController {
   constructor(
     private readonly signatureService: GithubWebhookSignatureService,
     private readonly sqsPublisher: SqsPublisher,
+    private readonly issueTriageRepository: IssueTriageRepository,
   ) {}
 
   @Post()
@@ -116,12 +118,30 @@ export class WebhookGithubController {
       },
     };
 
+    const registration = await this.issueTriageRepository.register(event);
+
+    if (!registration.created) {
+      return {
+        accepted: true,
+        duplicate: true,
+        eventId: event.eventId,
+        status: registration.triage?.status,
+      };
+    }
+
     const messageId = await this.sqsPublisher.publish(event);
+    await this.issueTriageRepository.markQueued(
+      registration.triage.id,
+      messageId,
+    );
 
     console.log('Mensagem publicada no SQS:', messageId);
 
     return {
       accepted: true,
+      duplicate: false,
+      eventId: event.eventId,
+      triageId: registration.triage.id,
       messageId,
     };
   }

@@ -7,6 +7,7 @@ import { envSchema } from './env/env';
 import { AwsModule } from './services/aws/aws.module';
 import { GithubModule } from './services/github/github.module';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { IssueTriageModule } from './services/triage/issue-triage.module.js';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     AwsModule,
     GithubModule,
     PrismaModule,
+    IssueTriageModule,
   ],
   controllers: [HealthController, WebhookGithubController],
   providers: [],
