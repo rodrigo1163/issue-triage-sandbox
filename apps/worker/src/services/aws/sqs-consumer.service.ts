@@ -3,6 +3,8 @@ import type { Message } from '@aws-sdk/client-sqs';
 import { SqsConsumerEventHandler, SqsMessageHandler } from '@ssut/nestjs-sqs';
 import z from 'zod';
 import { ISSUE_TRIAGE_QUEUE_NAME } from './sqs-queue.constants';
+import { TriageStatus } from '@prisma/client';
+import { IssueTriageRepository } from '../triage/issue-triage.repository.js';
 
 const issueCreatedMessageSchema = z.object({
   eventId: z.string().min(1),
@@ -23,16 +25,18 @@ type IssueCreatedMessage = z.infer<typeof issueCreatedMessageSchema>;
 export class SqsConsumerService {
   private readonly logger = new Logger(SqsConsumerService.name);
 
+  constructor(private readonly issueTriageRepository: IssueTriageRepository) {}
+
   @SqsMessageHandler(ISSUE_TRIAGE_QUEUE_NAME, false)
-  handleMessage(message: Message): Message {
+  async handleMessage(message: Message): Promise<Message> {
     if (!message.Body) {
       throw new Error('SQS message body is empty');
     }
 
     const event = this.parseMessage(message.Body);
-    console.log('[worker] Mensagem recebida do SQS:', event);
+    this.logger.log(`Mensagem recebida do SQS: ${event.eventId}`);
 
-    this.processIssueCreated(event);
+    await this.processIssueCreated(event);
 
     return message;
   }
@@ -62,9 +66,23 @@ export class SqsConsumerService {
     return issueCreatedMessageSchema.parse(payload);
   }
 
-  private processIssueCreated(event: IssueCreatedMessage): void {
+  private async processIssueCreated(event: IssueCreatedMessage): Promise<void> {
+    const triage = await this.issueTriageRepository.findByEventId(
+      event.eventId,
+    );
+
+    if (!triage) {
+      throw new Error(`Triage not found for event ${event.eventId}`);
+    }
+
+    if (triage.status !== TriageStatus.QUEUED) {
+      throw new Error(
+        `Triage ${triage.id} is not ready for processing: ${triage.status}`,
+      );
+    }
+
     this.logger.log(
-      `Issue event received: ${event.data.repository}#${event.data.issueNumber}`,
+      `Persisted triage loaded: ${triage.repository}#${triage.issueNumber}`,
     );
   }
 }
