@@ -6,3 +6,28 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum TriageStatus {
+  RECEIVED
+  QUEUED
+}
+
+model IssueTriage {
+  id      String @id @default(cuid())
+  eventId String @unique
+
+  repository  String
+  issueNumber Int
+  title       String
+  description String?
+  occurredAt  DateTime
+
+  status       TriageStatus @default(RECEIVED)
+  sqsMessageId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([repository, issueNumber])
+  @@index([status])
+}
