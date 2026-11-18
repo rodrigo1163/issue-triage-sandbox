@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "HumanReviewReason" ADD VALUE 'QUESTION_REQUIRES_REVIEW';

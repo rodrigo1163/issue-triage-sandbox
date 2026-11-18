@@ -16,6 +16,8 @@ enum TriageStatus {
 enum HumanReviewReason {
   UNKNOWN_REPOSITORY
   MISSING_DESCRIPTION
+  INSUFFICIENT_INFORMATION
+  QUESTION_REQUIRES_REVIEW
 }
 
 model IssueTriage {

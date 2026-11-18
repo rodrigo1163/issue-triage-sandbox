@@ -13,8 +13,11 @@ export class IssueTriageRepository {
   }
 
   markHumanReview(id: string, reason: HumanReviewReason) {
-    return this.prisma.issueTriage.update({
-      where: { id },
+    return this.prisma.issueTriage.updateMany({
+      where: {
+        id,
+        status: TriageStatus.QUEUED,
+      },
       data: {
         status: TriageStatus.HUMAN_REVIEW,
         humanReviewReason: reason,

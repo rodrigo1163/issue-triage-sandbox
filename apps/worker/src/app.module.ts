@@ -7,6 +7,7 @@ import { AwsModule } from './services/aws/aws.module';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { IssueTriageModule } from './services/triage/issue-triage.module.js';
 import { ProjectCatalogModule } from './services/catalog/project-catalog.module.js';
+import { GraphModule } from './graph/graph.module.js';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ProjectCatalogModule } from './services/catalog/project-catalog.module.
     PrismaModule,
     IssueTriageModule,
     ProjectCatalogModule,
+    GraphModule,
   ],
   controllers: [HealthController],
 })

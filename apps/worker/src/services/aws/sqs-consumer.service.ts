@@ -6,6 +6,7 @@ import { ISSUE_TRIAGE_QUEUE_NAME } from './sqs-queue.constants';
 import { HumanReviewReason, TriageStatus } from '@prisma/client';
 import { IssueTriageRepository } from '../triage/issue-triage.repository.js';
 import { ProjectCatalogService } from '../catalog/project-catalog.service.js';
+import { TriageGraphService } from '../../graph/triage-graph.service.js';
 
 const issueCreatedMessageSchema = z.object({
   eventId: z.string().min(1),
@@ -29,6 +30,7 @@ export class SqsConsumerService {
   constructor(
     private readonly issueTriageRepository: IssueTriageRepository,
     private readonly projectCatalogService: ProjectCatalogService,
+    private readonly triageGraphService: TriageGraphService,
   ) {}
 
   @SqsMessageHandler(ISSUE_TRIAGE_QUEUE_NAME, false)
@@ -120,6 +122,50 @@ export class SqsConsumerService {
 
     this.logger.log(
       `Project context loaded for ${triage.repository}#${triage.issueNumber}: ${project.responsibles.join(', ')}`,
+    );
+
+    const analysis = await this.triageGraphService.analyze({
+      issue: {
+        repository: triage.repository,
+        issueNumber: triage.issueNumber,
+        title: triage.title,
+        description: triage.description,
+      },
+      projectContext: project,
+    });
+
+    if (analysis.error) {
+      throw new Error(`Triage graph failed: ${analysis.error}`);
+    }
+
+    if (!analysis.intent) {
+      throw new Error('Triage graph did not return an intent');
+    }
+
+    if (analysis.intent === 'HUMAN_REVIEW') {
+      await this.issueTriageRepository.markHumanReview(
+        triage.id,
+        HumanReviewReason.INSUFFICIENT_INFORMATION,
+      );
+      this.logger.warn(
+        `Human review required for ${triage.repository}#${triage.issueNumber}: ${analysis.reason}`,
+      );
+      return;
+    }
+
+    if (analysis.intent === 'QUESTION') {
+      await this.issueTriageRepository.markHumanReview(
+        triage.id,
+        HumanReviewReason.QUESTION_REQUIRES_REVIEW,
+      );
+      this.logger.log(
+        `Question routed to human review for ${triage.repository}#${triage.issueNumber}: ${analysis.reason}`,
+      );
+      return;
+    }
+
+    this.logger.log(
+      `Issue intent identified for ${triage.repository}#${triage.issueNumber}: ${analysis.intent} (${analysis.reason})`,
     );
   }
 }

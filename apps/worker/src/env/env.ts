@@ -5,6 +5,8 @@ export const envSchema = z.object({
   SQS_QUEUE_URL: z.url(),
   AWS_PROFILE: z.string().min(1),
   DATABASE_URL: z.url(),
+  OPENROUTER_API_KEY: z.string().min(1),
+  OPENROUTER_MODEL: z.string().min(1),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -34,11 +34,13 @@ Backend distribuído para receber issues do GitHub, organizar o processamento e 
 - [x] Consulta do catálogo pelo Worker.
 - [x] Persistência do estado `HUMAN_REVIEW` e dos motivos `UNKNOWN_REPOSITORY` e `MISSING_DESCRIPTION`.
 - [x] Encaminhamento de repositórios desconhecidos e issues sem descrição para revisão humana.
+- [x] Grafo LangGraph no Worker com `identifyIntent` como primeiro nó.
+- [x] Classificação inicial em `BUG`, `IMPROVEMENT`, `QUESTION` ou `HUMAN_REVIEW`.
 
 ## O que está parcialmente pronto
 
 - [ ] A deduplicação da entrada está pronta, mas a idempotência da publicação no GitHub ainda não foi implementada.
-- [ ] O Worker carrega a triagem, mas ainda não executa uma análise.
+- [ ] O Worker executa `identifyIntent`, mas ainda não possui especialistas de bugs ou melhorias.
 
 ## O que falta para finalizar o desafio
 
@@ -50,12 +52,12 @@ Backend distribuído para receber issues do GitHub, organizar o processamento e 
 
 ### IA
 
-- [ ] Escolher e integrar um provedor real de IA.
-- [ ] Criar o harness com instruções fixas, limites e validação de saída.
+- [x] Escolher e integrar o adaptador do provedor OpenRouter.
+- [x] Criar a fundação do harness com instruções fixas e saída estruturada validada.
 - [ ] Expor o catálogo como ferramenta controlada da IA.
 - [ ] Criar especialista para bugs.
 - [ ] Criar especialista para melhorias.
-- [ ] Classificar como `BUG`, `IMPROVEMENT` ou `QUESTION`.
+- [x] Classificar como `BUG`, `IMPROVEMENT` ou `QUESTION`.
 - [ ] Gerar resumo e sugestão de próximo passo.
 - [ ] Impedir que a IA invente causas, arquivos ou diagnósticos.
 
@@ -96,7 +98,11 @@ Worker carrega a triagem
       ↓
 Worker verifica descrição e catálogo
       ├─ descrição ausente ou repositório desconhecido → HUMAN_REVIEW
-      └─ catálogo válido → contexto disponível para a próxima etapa
+      └─ catálogo válido → grafo `identifyIntent`
+                              ├─ BUG → especialista futuro
+                              ├─ IMPROVEMENT → especialista futuro
+                              ├─ QUESTION → HUMAN_REVIEW
+                              └─ HUMAN_REVIEW → revisão humana
 ```
 
 ## Executar localmente
@@ -106,7 +112,13 @@ pnpm install
 docker compose up -d postgres
 pnpm --filter api db:migrate
 pnpm --filter api db:seed
-pnpm dev
+```
+
+Inicie API e Worker em terminais separados:
+
+```bash
+pnpm --filter api start:dev
+pnpm --filter worker start:dev
 ```
 
 Configure os arquivos `.env` usando os exemplos:
@@ -115,7 +127,8 @@ Configure os arquivos `.env` usando os exemplos:
 - `apps/worker/.env.example`
 
 O `DATABASE_URL` deve apontar para o PostgreSQL local do Docker Compose.
+O Worker também precisa de `OPENROUTER_API_KEY` e `OPENROUTER_MODEL` válidos.
 
 ## Próximo passo atual
 
-Implementar o harness de IA e os especialistas para bugs e melhorias. A persistência e o roteamento do Worker foram validados manualmente contra o PostgreSQL local, sem adicionar testes automatizados. A validação end-to-end via SQS depende de uma `SQS_QUEUE_URL` válida.
+Implementar o especialista de bugs e, depois, o especialista de melhorias. A validação end-to-end via SQS e OpenRouter depende de `SQS_QUEUE_URL` e `OPENROUTER_API_KEY` válidas. Não foram adicionados testes automatizados.
